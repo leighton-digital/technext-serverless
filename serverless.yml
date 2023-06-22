@@ -1,0 +1,66 @@
+service: items
+
+frameworkVersion: '3'
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-iam-roles-per-function
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: ${opt:stage}
+  region: eu-west-2 
+  deploymentBucket:
+    blockPublicAccess: true
+
+functions:
+  addItem:
+    handler: src/addItem.handler
+    iamRoleStatementsName: ${self:service}-${opt:stage}-add-item-role
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - dynamodb:UpdateItem
+        Resource:
+          - ${self:custom.itemTableArn}
+    logRetentionInDays: 1
+    environment:
+      TABLE_NAME: ${self:custom.itemTableName}
+    events:
+      - http:
+          path: /add-item
+          method: post
+          cors: true
+          integration: lambda
+          request:
+            passThrough: NEVER            
+  getItem:
+    handler: src/getItem.handler
+    logRetentionInDays: 1
+    iamRoleStatementsName: ${self:service}-${opt:stage}-get-item-role
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource:
+          - ${self:custom.itemTableArn}
+    environment:
+      TABLE_NAME: ${self:custom.itemTableName}
+    events:
+      - http:
+          path: /get-item
+          method: get
+          cors: true
+          integration: lambda
+          request:
+            passThrough: NEVER            
+custom:
+  itemTableName: ${self:service}-${opt:stage}-itemTable
+  itemTableArn: !GetAtt itemTable.Arn
+  serverless-iam-roles-per-function:
+    iamGlobalPermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/TechNExtLimitedAccess
+
+resources:
+  - ${file(./resources/dynamoTables.yml)}
