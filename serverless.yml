@@ -59,8 +59,6 @@ functions:
 custom:
   itemTableName: ${self:service}-${opt:stage}-itemTable
   itemTableArn: !GetAtt itemTable.Arn
-  serverless-iam-roles-per-function:
-    iamGlobalPermissionsBoundary: !Sub arn:aws:iam::${AWS::AccountId}:policy/TechNExtLimitedAccess
 
 resources:
   - ${file(./resources/dynamoTables.yml)}
